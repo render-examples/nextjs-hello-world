@@ -3,7 +3,7 @@ services:
   name: next-js
   env: node
   plan: starter
-  buildCommand: yarn; yarn build
+  buildCommand: cd dir; yarn; yarn build
   startCommand: yarn start
 # Uncomment the following to deploy this app as a static site on render
 # - type: web
