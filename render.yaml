@@ -5,6 +5,9 @@ services:
   plan: starter
   buildCommand: yarn; yarn build
   startCommand: yarn start
+  envVars:
+  - key: NODE_ENV
+    value: production
 # Uncomment the following to deploy this app as a static site on render
 # - type: web
 #   name: nextjs-static
@@ -12,4 +15,7 @@ services:
 #   buildCommand: yarn; yarn build; yarn next export
 #   staticPublishPath: out
 #   pullRequestPreviewsEnabled: true     # optional
+#   envVars:
+#   - key: NODE_ENV
+#     value: production
 
