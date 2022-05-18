@@ -1,10 +1,7 @@
 import Link from 'next/link'
 const Index = () => (
   <div>
-    Hello World.{' '}
-    <Link href="/about">
-      <a>About</a>
-    </Link>
+    omer.{' '}
   </div>
 )
 export default Index;
