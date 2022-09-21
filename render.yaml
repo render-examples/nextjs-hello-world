@@ -5,6 +5,7 @@ services:
   plan: starter
   buildCommand: yarn; yarn build
   startCommand: yarn start
+  autoDeploy: false
   envVars:
   - key: NODE_ENV
     value: production
