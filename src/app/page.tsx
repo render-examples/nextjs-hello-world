@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getUser } from 'src/utils/auth'
 
 export default async function Home() {
@@ -6,7 +7,7 @@ export default async function Home() {
   return (
     <main>
       <div>
-        {(user.email === 'anonymous' ? <a href="/api/auth/login">Login</a> : <a href="/api/auth/logout">Logout</a>)}
+        {(user.email === 'anonymous' ? <Link href="/api/auth/login">Login</Link> : <Link href="/api/auth/logout">Logout</Link>)}
         <br/>
         <br/>
         {JSON.stringify(user)}
