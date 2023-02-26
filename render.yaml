@@ -21,3 +21,4 @@ services:
         property: connectionString
   - type: redis
     name: private redis
+    ipAllowList: []
