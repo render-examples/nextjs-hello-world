@@ -1,12 +1,13 @@
-import './globals.css'
 import { UserProvider } from '@auth0/nextjs-auth0/client';
+
+import 'src/css/globals.css'
 
 export const metadata = {
   title: 'Mentat',
   description: 'Mentat',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <UserProvider>
-        <body>{children}</body>
+        <body>
+          {children}
+        </body>
       </UserProvider>
     </html>
   )

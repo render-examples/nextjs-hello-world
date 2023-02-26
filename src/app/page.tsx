@@ -1,5 +1,7 @@
-import Header from 'src/components/Header'
-import { getUser } from 'src/utils/auth'
+import MentatMind from "@/components/MentatMind"
+import Header from "@/components/Header"
+import { getUser } from "@/utils/auth"
+import { Suspense } from "react"
 
 export default async function Home() {
   const user = await getUser()
@@ -7,8 +9,11 @@ export default async function Home() {
   return (
     <>
       <Header user={user} />
-      <main>
-      </main>
+			{user.email !== 'anonymous' 
+			?
+			  // @ts-expect-error Server Component
+        <MentatMind />
+        : null}
     </>
   )
 }
