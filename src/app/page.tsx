@@ -7,9 +7,11 @@ export default async function Home() {
   return (
     <main>
       <div>
-        {(user.email === 'anonymous' ? <Link href="/api/auth/login">Login</Link> : <Link href="/api/auth/logout">Logout</Link>)}
-        <br/>
-        <br/>
+        {(user.email === 'anonymous'
+          ? <Link href="/api/auth/login" target="_blank">Login</Link>
+          : <Link href="/api/auth/logout">Logout</Link>)}
+        <br />
+        <br />
         {JSON.stringify(user)}
       </div>
     </main>
