@@ -1,11 +1,23 @@
+databases:
+- name: docstore
+  databaseName: docstore
+  user: user
+
+
 services:
-- type: web
-  name: next-js
-  env: node
-  plan: starter
-  buildCommand: yarn; yarn build
-  startCommand: yarn start
-  autoDeploy: false
-  envVars:
-  - key: NODE_ENV
-    value: production
+  - type: web
+    name: next-js
+    env: node
+    plan: starter
+    buildCommand: yarn; yarn build
+    startCommand: yarn start
+    autoDeploy: false
+    envVars:
+    - key: NODE_ENV
+      value: production
+    - key: DATABASE_URL
+      fromDatabase:
+        name: docstore
+        property: connectionString
+  - type: redis
+    name: private redis
