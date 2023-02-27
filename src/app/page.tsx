@@ -9,7 +9,7 @@ export default async function Home() {
   return (
     <>
       <Header user={user} />
-			{user.email !== 'anonymous' 
+			{user.email !== 'anonymous' || process.env.NODE_ENV === "development"
 			?
 			  // @ts-expect-error Server Component
         <MentatMind />

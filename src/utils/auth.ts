@@ -1,14 +1,17 @@
 import { cookies } from 'next/headers';
+const { AUTH0_BASE_URL } = process.env
 
 export const getUser = async () => {
-  const res = await fetch(`${process.env.AUTH0_BASE_URL}/api/auth/me`, {
-    headers: {
-      cookie: `appSession=${cookies().get('appSession')?.value}`
-    }
-  })
-  let user;
+  let res, user = null;
+  if (AUTH0_BASE_URL) {
+    res = await fetch(`${AUTH0_BASE_URL}/api/auth/me`, {
+      headers: {
+        cookie: `appSession=${cookies().get('appSession')?.value}`
+      }
+    })
+  }
 
-  if (res.body !== null) {
+  if (res?.body !== undefined) {
     user = await res.json();
   } else {
     user = { 'email': 'anonymous'}
