@@ -1,6 +1,7 @@
-
-export default async function ChatHistory() {
+export default async function ChatHistory({ children }: { children: React.ReactNode }) {
   return (
-    <div></div>
+    <div className='w-full overflow-y-auto mt-4' style={{ flexGrow: 1 }}>
+      {children}
+    </div>
   )
 }
