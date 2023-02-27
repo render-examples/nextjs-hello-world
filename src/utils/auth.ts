@@ -11,7 +11,7 @@ export const getUser = async () => {
     })
   }
 
-  if (res?.body !== undefined) {
+  if (res?.body) {
     user = await res.json();
   } else {
     user = { 'email': 'anonymous'}
