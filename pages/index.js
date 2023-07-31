@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from 'next/link';
 const Index = () => (
   <div>
     Hello World.{' '}
@@ -6,5 +6,5 @@ const Index = () => (
       <a>About</a>
     </Link>
   </div>
-)
+) 
 export default Index;
