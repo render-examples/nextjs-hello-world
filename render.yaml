@@ -1,14 +1,16 @@
 services:
-- type: web
-  name: next-js
-  env: node
-  plan: starter
-  buildCommand: yarn; yarn build
-  startCommand: yarn start
-  autoDeploy: false
-  envVars:
-  - key: NODE_ENV
-    value: production
+  - type: web
+    name: next-js
+    env: node
+    plan: starter
+    buildCommand: yarn; yarn build
+    startCommand: yarn start
+    autoDeploy: false
+    envVars:
+    - key: NODE_ENV
+      value: production
+    - key: NODE_VERSION
+      value: 17
 # Uncomment the following to deploy this app as a static site on render
 # - type: web
 #   name: nextjs-static
