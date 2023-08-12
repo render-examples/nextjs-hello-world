@@ -3,7 +3,7 @@ services:
     name: next-js
     env: node
     plan: starter
-    buildCommand: yarn; yarn build
+    buildCommand: yarn
     startCommand: yarn start
     autoDeploy: false
     envVars:
