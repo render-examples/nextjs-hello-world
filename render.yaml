@@ -13,7 +13,7 @@ services:
 # - type: web
 #   name: nextjs-static
 #   env: static
-#   buildCommand: yarn; yarn build; yarn next export
+#   buildCommand: yarn; yarn build
 #   staticPublishPath: out
 #   pullRequestPreviewsEnabled: true     # optional
 #   envVars:
