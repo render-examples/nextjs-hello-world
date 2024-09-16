@@ -3,9 +3,9 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div>
-      Hello World.{" "}
+      Hello World. I'm Tony.{" "}
       <Link href="/about">
-        About
+        About Tony's Career.
       </Link>
     </div>
   );
