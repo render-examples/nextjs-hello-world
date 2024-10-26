@@ -9,8 +9,9 @@ The app in this repo is deployed at https://next-js.onrender.com.
 
 Click the button below to deploy this app on Render.
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-
+<a href="https://render.com/deploy" referrerpolicy="no-referrer-when-downgrade" rel="nofollow">
+  <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" />
+</a>
 
 ## Deploy as Static Site
 
