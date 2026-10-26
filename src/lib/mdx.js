@@ -53,7 +53,7 @@ export async function compileMDXFile(contentPath) {
               
               // Fonts
               fontFamily: '"Orbitron", "Oswald", sans-serif',
-              fontSize: '14px',
+              fontSize: '16px', // <---- This is intentionally bigger than the font size below so that mermaid renders a big enough box for the given text
             },
             flowchart: {
               useMaxWidth: true,

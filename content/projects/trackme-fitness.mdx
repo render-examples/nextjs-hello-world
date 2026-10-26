@@ -78,7 +78,7 @@ flowchart LR
 
     subgraph Server["Server (Rust)"]
         AX["Axum REST API (Tower: CORS, tracing)"]
-        AUTH["JWT extractor + Argon2 login"]
+        AUTH["JWT extractor + Argon2 <br /> auth guard"]
         PG[("Postgres (sqlx)")]
         AX --- AUTH
         AX <--> PG
