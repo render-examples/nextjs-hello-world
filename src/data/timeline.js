@@ -54,7 +54,7 @@ export const timeline = [
     image: {
       url: 'https://cdn.iconscout.com/icon/free/png-512/free-amazon-logo-icon-svg-download-png-2285069.png',
     },
-    description: 'Development engineer for Alexa+, LLMs with agentic workflows.',
+    description: "Development engineer for Alexa+, LLMs with agentic workflows. ***Laid off early due to company restructuring - transitioned to pursue personal projects and growth on my engineering journey).***",
     highlights: [
       'Implemented validation guardrails for configuration management in Alexa+ LLM API infrastructure using AWS Lambda, emphasizing scalability and reducing adverse events during dynamic inference by 3x',
       'Diagnosed and fixed production bugs in asynchronous agentic LLM system by tracing path through execution graph in spite of limited logging availability, causing a drop in bug reports by 10%',
