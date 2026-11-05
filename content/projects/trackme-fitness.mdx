@@ -29,16 +29,16 @@ TrackMe Fitness is an **offline-first mobile workout tracker** that unifies lift
 
 <ProjectCarousel
   images='[
-    {"src":"/images/trackme-fitness/loading.png","alt":"Loading screen","caption":"App loading screen"},
-    {"src":"/images/trackme-fitness/dash.png","alt":"Dashboard","caption":"Unified dashboard — lifting + running"},
-    {"src":"/images/trackme-fitness/login.png","alt":"Login screen","caption":"Secure authentication with Argon2 + JWT"},
-    {"src":"/images/trackme-fitness/lifting.png","alt":"Lifting session","caption":"Lifting tracker with sets/reps/RPE"},
-    {"src":"/images/trackme-fitness/running.png","alt":"Running session","caption":"Running tracker with distance/pace"},
-    {"src":"/images/trackme-fitness/month.png","alt":"Month view","caption":"Monthly training overview"},
-    {"src":"/images/trackme-fitness/backend_status.png","alt":"Backend status","caption":"Deployed Axum backend on Render"}
+    {"src":"/images/trackme-fitness/dash.png","alt":"Dashboard","caption":"Unified dashboard — lifting + running","scale":0.25},
+    {"src":"/images/trackme-fitness/login.png","alt":"Login screen","caption":"Secure authentication with Argon2 + JWT","scale":0.25},
+    {"src":"/images/trackme-fitness/lifting.png","alt":"Lifting session","caption":"Lifting tracker with sets/reps/RPE","scale":0.25},
+    {"src":"/images/trackme-fitness/running.png","alt":"Running session","caption":"Running tracker with distance/pace","scale":0.25},
+    {"src":"/images/trackme-fitness/month.png","alt":"Month view","caption":"Monthly training overview","scale":0.25},
+    {"src":"/images/trackme-fitness/backend_status.png","alt":"Backend status","caption":"Deployed Axum backend on Render","fit":"contain"}
   ]'
   defaultIndex={0}
   showThumbnails={true}
+  height="600px"
 />
 
 ---
@@ -138,33 +138,52 @@ sequenceDiagram
 
 ### 1. Offline-First Sync Engine
 
-Every local row carries a `sync_status` column constrained to `synced`, `pending`, or `pending_delete`, enforced with a SQL `CHECK`. The soft-delete state means deletions can be pushed to the server before the row is removed locally.
+Every local row carries a `sync_status` column constrained to `synced`, `pending`, or `pending_delete`, enforced with a SQL `CHECK`. The soft-delete state means deletions are pushed to the server and a confirmation must be received before the row is removed locally.
 
 Local changes go to the server in a **single batched endpoint** (`POST /api/v1/sync/push`) that returns **per-row results**. This avoids chatty per-record requests and lets the client mark exactly which rows succeeded.
 
+**Pulling rows by sync flag** — near beginning of sync cycle:
 ```rust
-// Simplified sync push handler (server-side)
-#[derive(Deserialize)]
-struct PushRequest {
-    lifting_sessions: Vec<LiftingSessionPayload>,
-    running_sessions: Vec<RunningSessionPayload>,
-    // ... other tables
+pub async fn pull_pending_sessions(pool: &SqlitePool) -> SyncCycleResult<Vec<SessionLocalEntry>> {
+    let sessions: Vec<SessionLocalEntry> = sqlx::query_as(
+            "SELECT * FROM sessions
+                WHERE sync_status = 'pending'"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|err| SyncCycleError::SQLxError(err.to_string()))?;
+
+    Ok(sessions)
 }
 
-#[derive(Serialize)]
-struct PushResponse {
-    lifting_sessions: Vec<RowResult>,
-    running_sessions: Vec<RowResult>,
-    // ...
+pub async fn pull_delete_pending_sessions(pool: &SqlitePool) -> SyncCycleResult<Vec<SessionId>> {
+    let session_ids: Vec<SessionId> = sqlx::query_as(
+            "SELECT id FROM sessions
+                WHERE sync_status = 'pending_delete'"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|err| SyncCycleError::SQLxError(err.to_string()))?;
+
+    Ok(session_ids)
 }
 
-#[derive(Serialize)]
-struct RowResult {
-    local_id: i64,
-    server_id: Option<i64>,
-    success: bool,
-    error: Option<String>,
-}
+...
+```
+
+During a sync cycle, data is pulled for each data type (in this case sessions) based on its `sync_status`.
+
+**Modifying flag from response** — occurs at end of sync cycle on client:
+```
+let PushResponse {
+        upserted_ids, // <--- Confirmed modified
+        deleted_ids, // <--- Confirmed deleted
+        failed_ids: _,
+        checksum: backend_checksum,
+    } = push_response; // <--- Response from server during a sync
+
+mark_synced_items(upserted_ids, &pool).await ?; // <--- This is how we mark that sync is completed
+remove_pending_deleted(deleted_ids, &pool).await ?; // <--- Confirmed deleted items can finally be removed
 ```
 
 The client applies results row-by-row — failed rows stay `pending` and retry next cycle.
@@ -175,61 +194,48 @@ The client applies results row-by-row — failed rows stay `pending` and retry n
 
 The background worker runs on `tauri::async_runtime::spawn` with a `tokio::time::interval`. Key patterns:
 
-**InitStage state machine** — shared via `tokio::sync::watch`:
+**LoadedState state machine** — shared via `tokio::sync::watch`:
 ```rust
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum InitStage {
-    NotStarted,
-    DbReady,
-    AuthReady,
-    SyncWorkerStarted,
+pub enum LoadedState {
+    Starting,
+    Login,
     Ready,
 }
 
 // In AppState:
-init_tx: watch::Sender<InitStage>,
-init_rx: watch::Receiver<InitStage>,
+init_tx: watch::Sender<LoadedState>,
+init_rx: watch::Receiver<LoadedState>,
 ```
-
-Only the owner holds the `Sender`; consumers clone the `Receiver`. Nothing outside can mutate it.
+LoadingState is modified by only by the initialization worker (temporary) and login handler.
 
 **Sync trigger + completion signaling** — `tokio::sync::Notify` + RAII guard:
 ```rust
-// Trigger immediate sync after local write
-sync_notify.notify_one();
-
 // In worker loop:
-tokio::select! {
-    _ = interval.tick() => run_sync_cycle().await,
-    _ = sync_notify.notified() => run_sync_cycle().await,
-}
-
-// RAII guard ensures flag is cleared even on panic
-struct SyncGuard(AtomicBool);
-
-impl Drop for SyncGuard {
-    fn drop(&mut self) {
-        self.0.store(false, Ordering::Release);
+futures::select! {
+    _res = trigger_cycle.0.notified().fuse() => {
+        interval.reset_immediately();
+    }
+    _res = interval.tick().fuse() => {}
+    ...
     }
 }
-
-async fn run_sync_cycle(&self) {
-    let _guard = SyncGuard(self.syncing.swap(true, Ordering::Acquire));
-    // ... do sync work ...
-    // guard drops here, flag cleared automatically
-    cycle_complete.notify_one();
+// RAII guard ensures flag is cleared even on panic
+pub struct SyncCycleCompleted(pub Notify);
+impl SyncCycleCompleted {
+    pub fn notify_guard(&self) -> NotifySyncCompleteGuard<'_> {
+        NotifySyncCompleteGuard { trigger: self }
+    }
+}
+pub struct NotifySyncCompleteGuard<'t> {
+    trigger: &'t SyncCycleCompleted,
+}
+impl<'t> Drop for NotifySyncCompleteGuard<'t> {
+    fn drop(&mut self) {
+        self.trigger.0.notify_waiters();
+    }
 }
 ```
-
-**UI waits for exactly one fresh cycle** after a write:
-```rust
-// Tauri command invoked after local insert
-#[tauri::command]
-async fn wait_for_sync(state: State<'_, AppState>) -> Result<(), String> {
-    state.cycle_complete.notified().await;
-    Ok(())
-}
-```
+The worker loop checks if a sync is currently being triggered. If a sync is being run, the guard shown underneath will execute a notify even if the function returns early or panics.
 
 ---
 
@@ -237,81 +243,113 @@ async fn wait_for_sync(state: State<'_, AppState>) -> Result<(), String> {
 
 **Password hashing** — Argon2 with default params:
 ```rust
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
-
-fn verify_password(password: &str, hash: &str) -> Result<bool, argon2::Error> {
-    let parsed_hash = PasswordHash::new(hash)?;
-    Ok(Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok())
-}
+let pass_result = argon2.verify_password(login_request.password.as_ref(), &reference_hash)
+    .map_err(|err| match err {
+        password_hash::Error::PasswordInvalid => AppError::ValidationError,
+        _ => AppError::SystemValidationError(err.to_string()),
+    });
 ```
 
 **Constant-work login** — dummy hash verification for unknown users:
 ```rust
-async fn login(pool: &PgPool, creds: LoginRequest) -> Result<LoginResponse, AuthError> {
-    let user = sqlx::query_as!(User, "SELECT * FROM users WHERE username = $1", &creds.username)
-        .fetch_optional(pool)
-        .await?;
+// Do not return until hashing is done to prevent timing attacks
+let entry = get_user_entry(&login_request.username, &pool).await
+    .map_err(|_| AppError::UserNotFoundError);
 
-    // Always do comparable work — dummy hash if user not found
-    let hash = user.as_ref().map(|u| &u.password_hash).unwrap_or(&DUMMY_ARGON2_HASH);
-    let valid = verify_password(&creds.password, hash)?;
+let ref_hash_inner = entry.as_ref()
+    .map(|e| &e.password_hash)
+    .unwrap_or(&app_state.dummy_pass_hash); // <--- This is crucial, use dummy hash if user doesn't exist
 
-    if !valid || user.is_none() {
-        return Err(AuthError::InvalidCredentials); // identical error
-    }
+let argon2 = Argon2::default();
+let reference_hash = PasswordHash::new(ref_hash_inner)
+    .map_err(|err| AppError::SystemValidationError(err.to_string())) ?;
 
-    let token = create_jwt(user.unwrap().id)?;
-    Ok(LoginResponse { token })
-}
+... // Verify password here
+
+// Now hashing is done! We return here to give identical timing in all cases.
+let entry = entry ?;
+pass_result ?; // Extract the error after so we can get a glimpse of previous errors first
 ```
 
 **JWT extractor** — custom Axum extractor on every protected endpoint:
 ```rust
-#[derive(Clone)]
-struct AuthUser {
-    user_id: Uuid,
-}
+pub struct AuthedUser(pub Claims);
 
-#[async_trait]
-impl<S> FromRequestParts<S> for AuthUser
-where
-    S: Send + Sync,
-{
+impl FromRequestParts<AppState> for AuthedUser {
     type Rejection = AuthError;
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let token = parts
-            .headers
-            .get(header::AUTHORIZATION)
-            .and_then(|h| h.to_str().ok())
-            .and_then(|s| s.strip_prefix("Bearer "))
-            .ok_or(AuthError::MissingToken)?;
+    async fn from_request_parts(
+            parts: &mut axum::http::request::Parts,
+            state: &AppState,
+        ) -> Result<Self, Self::Rejection> 
+    {
+        // Raw extraction only fails if the token is missing
+        let TypedHeader(Authorization( bearer )) = parts
+            .extract::<TypedHeader<Authorization<Bearer>>>()
+            .await
+            .map_err(|_| AuthError::MissingToken) ?;
 
-        let claims = decode_jwt(token)?;
-        Ok(AuthUser { user_id: claims.sub })
+        let token_data = jsonwebtoken::decode::<Claims>(
+            bearer.token(),
+            &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
+            &Validation::new(Algorithm::HS256)
+        ).map_err(|_| AuthError::InvalidToken) ?;
+        
+        Ok(AuthedUser(token_data.claims))
     }
 }
 
 // Usage — every protected handler:
-async fn push_sync(
-    auth: AuthUser,
-    Json(payload): Json<PushRequest>,
-) -> Result<Json<PushResponse>, ApiError> {
-    // auth.user_id is guaranteed valid and scoped
-    // ... upsert with ON CONFLICT (id, user_id) DO UPDATE ...
+async fn pull_handler(
+        AuthedUser(claims) : AuthedUser, // <--- Use the JWT extractor as a guard
+        State(app_state) : State<AppState>,
+        Json(pull_request) : Json<PullRequest>,
+    ) -> AppResult<Json<PullResponse>>
+{
+    // Now all code here can assume JWT verification was successful
+    ...
 }
 ```
 
 **`user_id` never from request body** — every SQL query filters by `auth.user_id`:
 ```rust
-sqlx::query!(
-    "INSERT INTO lifting_sessions (user_id, ...) VALUES ($1, ...)
-     ON CONFLICT (id, user_id) DO UPDATE SET ...",
-    auth.user_id,
-    // ... other fields
-)
-.execute(pool)
-.await?;
+// In request handler
+async fn push_handler(
+        AuthedUser(claims) : AuthedUser,
+        State(app_state): State<AppState>,
+        Json(push_request): Json<PushRequest>
+    ) -> AppResult<Json<PushResponse>> 
+{
+    ...
+    let user_id = extract_user_uuid_from_claims(claims) ?; // <--- user id is explicitly from the verified claims struct from JWT
+    ...
+
+    let (upserted_ids, failed_upserted_ids) = perform_upserts(user_id, upserts, &pool).await ?;
+
+    ...
+}
+
+
+// During sql execution during above perform_upserts call
+let results: Vec<_ > = sqlx::query_as!(
+        UpsertResponse,
+        r#"
+        INSERT INTO lift_infos
+            ...
+            ON CONFLICT (id) 
+        DO UPDATE SET
+            lift_type_id = EXCLUDED.lift_type_id,
+            session_id = EXCLUDED.session_id,
+            updated_at = NOW()
+        WHERE
+            lift_infos.user_id = $4 // <--- Don't allow any user to modify anyone else's entries!
+        RETURNING (id);
+    "#,
+    ...
+    &user_id, <--- how user id is plugged into sqlx
+    )
+    .fetch_all(pool)
+    .await?;
 ```
 
 ---
@@ -326,14 +364,13 @@ Deliberate choice during Phase 3 (Backend + Sync, No Auth). Full-table pulls are
 
 | Phase | Scope | Isolation Principle |
 |-------|-------|---------------------|
-| 1. Client Prototype | UI + data modeling only | Settle shape *before* storage |
+| 1. Client Prototype | UI + data modeling only | Settle shape *before* storage and business logic |
 | 2. Local Persistence | SQLite + data model | Prove offline works *before* networking |
-| 3. Backend + Sync | Axum + Postgres + batched push/pull | Get sync working *without* auth |
-| 4. Local Integration | Docker Postgres + native server | Fast iteration, easy inspection |
-| 5. Temporary Auth | JWT extractor + temp token endpoint | Prove isolation *before* real credentials |
-| 6. Real Login | Argon2 `/auth/login`, demo accounts | Replace scaffolding *after* plumbing trusted |
-| 7. Sign-out + Polish | Wipe local data, immediate sync, cycle signaling | Full lifecycle feels solid |
-| 8. Mobile + Deploy | Phone build, Render deploy, multi-account test | Architecture holds on real device/host |
+| 3. Backend + Sync | Axum + Postgres + batched push/pull | Get fundamental sync working *without* auth |
+| 4. Temporary Auth | JWT extractor + temp token endpoint | Prove JWT guard working *before* real credentials |
+| 5. Real Login | Argon2 `/auth/login`, demo accounts | Replace scaffolding *after* JWT plumbing trusted |
+| 6. Sign-out + Polish | Wipe local data, immediate sync, cycle signaling | Full lifecycle feels solid; ensuring signout + multiple logins on same device is functioning |
+| 7. Mobile + Deploy | Phone build, Render deploy, multi-account test | Architecture holds on real device/host; greatly reduced chance of need for debugging business logic |
 
 ### 3. Security-First Auth Design
 
@@ -416,6 +453,6 @@ I didn't plan around the rule that a `std` mutex guard shouldn't be held across 
 
 ## Demo
 
-[View Repository]() — *private repository*
+[View Repository](#) — *private repository*
 
 > **Note:** The source repository is private (possible future monetization). Screenshots above demonstrate the running application. The deployed backend runs on Render under a custom subdomain; the mobile app builds and runs on physical devices against it.
