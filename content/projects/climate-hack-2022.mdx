@@ -27,13 +27,15 @@ Just a few dense layers with sigmoid output and a scaling factor (the default us
 
 **Score: ~0.61** — baseline only.
 
+Okay honestly, this score isn't that bad considering how simple the model is. I remember that changing the output to use a sigmoid (0-1 range) and scaling to the correct output space resulted in such a dramatic change over the ReLU default that was given to us. I ended up using this output style for every architecture I tried afterward because of how successful it was.
+
 ---
 
 ### 2. Attention-Based Approaches
 
 | Approach | Result | Notes |
 |----------|--------|-------|
-| **Perceiver / Perceiver IO** | ❌ Failed | Couldn't get working on a dummy classification problem, let alone video prediction. Discovered LAMB optimizer later — might have helped with large batch sizes. |
+| **Perceiver / Perceiver IO** | ❌ Failed | Couldn't get working on a dummy classification problem, let alone this spatio-temporal problem. Discovered LAMB optimizer later — might have helped with large batch sizes. |
 | **Transformers + WGAN-GP Encoder/Decoder** | ❌ Abandoned | Ambitious: WGAN-GP encoder → latent space → transformer for temporal prediction. Encoder/decoder shared per frame. Similar to Perceiver's latent transformer. Abandoned when VRAM exploded with my setup. |
 
 ---
@@ -41,7 +43,7 @@ Just a few dense layers with sigmoid output and a scaling factor (the default us
 ### 3. CNN-Based Approaches
 
 #### Stupid Simple Conv
-Basic conv → conv transpose encoder-decoder. No skip connections.
+Basic convolutions → convolutional transpose encoder-decoder. No skip connections.
 
 **Score: ~0.68** — surprisingly decent for a "brain-dead" baseline.
 
@@ -53,7 +55,7 @@ UNet architecture with staged downsampling/upsampling and **skip connections** b
 
 | Variant | Score | Notes |
 |---------|-------|-------|
-| **Original UNet** (adapted) | ~0.74 | 2nd place (among my own  models) — adapted standard UNet for spatiotemporal prediction |
+| **My Original UNet** (adapted) | ~0.74 | 2nd place (among my own  models) — adapted standard UNet for spatiotemporal prediction |
 | **UNetDeep** | **0.76036** 🏆 | **Best score** — deeper convolutions in bottleneck/latent section |
 
 > **Why UNets won:** Skip connections preserve high-frequency spatial details that pure encoder-decoder loses. The deeper bottleneck in UNetDeep captures more abstract temporal patterns without losing spatial fidelity.

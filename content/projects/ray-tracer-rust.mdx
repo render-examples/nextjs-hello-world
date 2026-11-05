@@ -69,7 +69,7 @@ A demo of the different meshes I've rendered using my app.
 
 ### 1. **k-d Tree Acceleration** — 60x Speedup over Naive Intersection
 
-**Change:** Built a k-d tree with Surface Area Heuristic (SAH) splitting to replace naive O(n) intersection testing. The tree recursively partitions space along axis-aligned planes, with a single-node optimization that treats leaf nodes containing few primitives as a flat list.
+**Change:** Built a k-d tree to replace naive O(n) intersection testing for ray paths. The tree recursively partitions space along axis-aligned planes and dramatically reduces the number of actual ray intersections to be tested.
 
 **Why:** Naive intersection testing against every triangle in a mesh is prohibitively slow for complex models. The Space Shuttle Discovery (~50k triangles) went from unusable to interactive render times. SAH-based splitting minimizes expected traversal cost, and the single-node optimization avoids recursion overhead for small leaf nodes.
 
@@ -81,13 +81,13 @@ A demo of the different meshes I've rendered using my app.
 
 **Change:** Scene primitives (triangles, spheres, mesh instances) are stored once in a central arena and referenced by `&Primitive` throughout the acceleration structure and render loop, rather than cloning vertex/index data per triangle.
 
-**Why:** A mesh with 50k triangles shares a single vertex buffer and index buffer. Copying that data per triangle would explode memory usage and cache pressure. References avoid duplication entirely. Using `Arc<Mutex<>>` would add atomic reference counting and lock contention — unnecessary since the scene is immutable after build.
+**Why:** A mesh with 50k triangles shares a single vertex buffer and index buffer. Copying that data per triangle would explode memory usage and cache pressure. References avoid duplication entirely. Using `Arc<Mutex<>>` would add atomic reference counting and lock contention and therefore unnecessary performance bottlenecks — unneeded since the scene is immutable after build.
 
 ---
 
 ### 3. **PBR Metallic-Roughness + Normal Mapping** — glTF Compatibility
 
-**Change:** Implemented the Disney BRDF (GGX normal distribution, Smith G2 geometry, Schlick Fresnel) with metallic-roughness parameterization matching the glTF 2.0 spec, plus tangent-space normal map sampling.
+**Change:** Implemented the BRDF with metallic-roughness parameterization matching the glTF 2.0 spec, plus tangent-space normal map sampling.
 
 **Why:** glTF is the de facto standard for 3D asset exchange. All the showcase models (Discovery, JWST, A380, etc.) are glTF files authored with PBR materials. Without proper metallic-roughness and normal mapping, these models render as flat, unlit geometry — defeating the purpose of loading real assets.
 
