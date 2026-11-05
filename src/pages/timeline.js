@@ -293,7 +293,20 @@ function TimelineEntry({ entry, index, isLast }) {
                 mb: 2,
               }}
             >
-              {entry.description}
+              {entry.description.split('***').map((part, index) => {
+                if (index % 2 === 1) {
+                  return (
+                    <Typography
+                      key={index}
+                      component="span"
+                      sx={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '0.85rem' }}
+                    >
+                      {part}
+                    </Typography>
+                  );
+                }
+                return part;
+              })}
             </Typography>
           )}
 
@@ -313,7 +326,20 @@ function TimelineEntry({ entry, index, isLast }) {
                     }}
                   />
                   <Typography sx={{ color: '#cbd5e1', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                    {highlight}
+                    {highlight.split('***').map((part, index) => {
+                      if (index % 2 === 1) {
+                        return (
+                          <Typography
+                            key={index}
+                            component="span"
+                            sx={{ fontStyle: 'italic', color: '#94a3b8', fontSize: '0.8rem' }}
+                          >
+                            {part}
+                          </Typography>
+                        );
+                      }
+                      return part;
+                    })}
                   </Typography>
                 </Box>
               ))}
