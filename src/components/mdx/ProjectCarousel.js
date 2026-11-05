@@ -11,8 +11,9 @@ function ProjectCarousel({
   showThumbnails = true,
   showArrows = true,
   className = '',
-  woof,
-}) {
+  height,
+  defaultScale = 1,
+}) {  
   // Parse images - handle various MDX serialization formats
   let validImages = [];
   try {
@@ -166,8 +167,14 @@ function ProjectCarousel({
               aria-roledescription="slide"
               aria-label={`${i + 1} of ${imageCount}`}
             >
-              <div className={styles.slideImageWrapper}>
+              <div 
+                style={{
+                  height,
+                }}
+                className={styles.slideImageWrapper}
+              >
                 <img
+                  style={createImgStyle(img, defaultScale)}
                   src={img.src || getPlaceholder(i)}
                   alt={img.alt}
                   className={styles.slideImage}
@@ -234,6 +241,16 @@ function ProjectCarousel({
       )}
     </div>
   );
+}
+
+function createImgStyle(img, defaultScale) {
+  const zoom = img.scale ?? defaultScale;
+  const objectFit = img.fit ?? !!img.scale ? "contain" : "cover";
+
+  return {
+      zoom,
+      objectFit,
+    }
 }
 
 export default ProjectCarousel;
