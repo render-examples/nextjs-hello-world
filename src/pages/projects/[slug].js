@@ -7,6 +7,11 @@ import { MDXRemote } from "next-mdx-remote";
 import { MDXComponents } from "@/components/MDXComponents";
 import { compileMDXFile, hasMDXContent } from "@/lib/mdx";
 
+function hexToRgb(hex) {
+  const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);
+  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '34, 211, 238';
+}
+
 export default function ProjectDetail({ project, mdxContent }) {
     if (!project) {
         return (
@@ -89,12 +94,12 @@ export default function ProjectDetail({ project, mdxContent }) {
                         </Typography>
                         {project.status && (
                             <Chip
-                                label={project.status}
+                                label={Array.isArray(project.status) ? project.status[0] : project.status}
                                 size="small"
                                 sx={{
-                                    color: "#22d3ee",
-                                    borderColor: "rgba(34, 211, 238, 0.4)",
-                                    background: "rgba(34, 211, 238, 0.1)",
+                                    color: Array.isArray(project.status) ? project.status[1] : "#22d3ee",
+                                    borderColor: Array.isArray(project.status) ? `rgba(${hexToRgb(project.status[1])}, 0.4)` : "rgba(34, 211, 238, 0.4)",
+                                    background: Array.isArray(project.status) ? `rgba(${hexToRgb(project.status[1])}, 0.1)` : "rgba(34, 211, 238, 0.1)",
                                 }}
                             />
                         )}

@@ -2,6 +2,11 @@ import { Box, Card, CardContent, Typography } from "@mui/material";
 import Link from "next/link";
 import SkillChip from "./skill_chip";
 
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '34, 211, 238';
+}
+
 export default function ProjectCard({ project }) {
     return (
         <Card
@@ -38,9 +43,9 @@ export default function ProjectCard({ project }) {
                     {project.status && (
                         <Box
                             sx={{
-                                background: 'rgba(34, 211, 238, 0.1)',
-                                color: '#22d3ee',
-                                border: '1px solid rgba(34, 211, 238, 0.3)',
+                                background: Array.isArray(project.status) ? `rgba(${hexToRgb(project.status[1])}, 0.1)` : 'rgba(34, 211, 238, 0.1)',
+                                color: Array.isArray(project.status) ? project.status[1] : '#22d3ee',
+                                border: `1px solid ${Array.isArray(project.status) ? hexToRgb(project.status[1]) + '50' : 'rgba(34, 211, 238, 0.3)'}`,
                                 borderRadius: 2,
                                 px: 1,
                                 py: 0.25,
@@ -51,7 +56,7 @@ export default function ProjectCard({ project }) {
                                 ml: 'auto',
                             }}
                         >
-                            {project.status}
+                            {Array.isArray(project.status) ? project.status[0] : project.status}
                         </Box>
                     )}
                 </Box>

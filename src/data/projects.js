@@ -2,7 +2,7 @@ export const projects = [
   {
     slug: 'trackme-fitness',
     title: 'TrackMe Fitness',
-    status: 'Completed',
+    status: ['Completed', '#34d399'],
     summary:
       'An offline-first full-stack mobile workout tracker: Tauri + React client, Axum + Postgres server, custom background sync engine. Unifies lifting + running. Repo is private for now.',
     cover: null,
@@ -45,7 +45,7 @@ export const projects = [
   {
     slug: 'ray-tracer-rust',
     title: 'Ray Tracer',
-    status: 'Completed',
+    status: ['Completed', '#34d399'],
     summary:
       'A CPU-based path tracer written in Rust with BVH acceleration, soft shadows, and multi-threading.',
     cover: null,
@@ -91,7 +91,7 @@ export const projects = [
   {
     slug: 'climate-hack-2022',
     title: 'Climate Hack 2022',
-    status: 'Completed',
+    status: ['Completed', '#34d399'],
     summary:
       'Submission for Climate Hack 2022 — placed 14th out of over 130 participants.',
     cover: null,
@@ -137,7 +137,7 @@ export const projects = [
   {
     slug: 'rl-algo-demo',
     title: 'Reinforcement Learning Algorithms Demo',
-    status: 'Completed',
+    status: ['Completed', '#34d399'],
     summary:
       'A demonstration of prominent reinforcement learning algorithms with visualizations.',
     cover: null,
@@ -183,7 +183,7 @@ export const projects = [
   {
     slug: 'space-explorer',
     title: 'Space Explorer',
-    status: 'Completed',
+    status: ['Completed', '#34d399'],
     summary:
       'Space game to learn about the solar system, gravity, and orbits.',
     cover: null,
@@ -229,7 +229,7 @@ export const projects = [
   {
     slug: 'circuit-builder',
     title: 'Circuit Builder',
-    status: 'Completed',
+    status: ['Completed', '#34d399'],
     summary:
       'Circuit game with lessons and a simulator.',
     cover: null,
