@@ -73,8 +73,7 @@ export default function Home() {
                             mb: 4,
                         }}
                     >
-                        Software engineer focused on systems programming, computer
-                        graphics, and machine learning. Currently exploring Rust, microservices, ray tracing, and deep learning.
+                        Engineer with diverse software experience including full-stack, microservices, web dev, machine learning, and graphics. Currently exploring Rust and agentic workflows.
                     </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
                         {/* Row 1: Social icons */}

@@ -56,8 +56,7 @@ export default function About() {
                                 }}
                             >
                                 Computer engineering graduate from the University of Toronto (2024).
-                                Focused on systems programming, computer graphics, and machine learning.
-                                Currently exploring Rust, microservices, deep learning, and agentic AI.
+                                I have diverse software experience in many areas such as full-stack, microservices, web dev, machine learning, and graphics. Currently exploring Rust and agentic AI.
                             </Typography>
                             <Typography
                                 sx={{
